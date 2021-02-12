@@ -6,6 +6,7 @@
 		GLOBAL	_api_putchar
 		GLOBAL	_api_putstr0
 		GLOBAL	_api_end
+		GLOBAL	_api_openwin
 
 [SECTION .text]
 
@@ -26,3 +27,19 @@ _api_putstr0;	; void api_putstr0(char *s);
 _api_end:		; void api_end(void)
 		MOV		EDX,4
 		INT		0x40
+
+_api_openwin:	; void api_openwin(char *buf, int xsiz, int ysiz, int col_inv, char *title);
+		PUSH	EDI
+		PUSH	ESI
+		PUSH	EBX
+		MOV		EDX,5
+		MOV		EBX,[ESP+16] ;edi,esi,ebxï™(4 * 3 = 12)â∫Ç…ê¨í∑ÇµÇƒÇ¢ÇÈÇ©ÇÁ
+		MOV		ESI,[ESP+20]
+		MOV		EDI,[ESP+24]
+		MOV		EAX,[ESP+28]
+		MOV		ECX,[ESP+32]
+		INT		0x40
+		POP		EBX
+		POP		ESI
+		POP		EDI
+		RET

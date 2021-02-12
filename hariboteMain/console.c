@@ -313,17 +313,42 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 
 int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax)
 {
-	int cs_base = *((int *) 0xfe8);
+	int ds_base = *((int *) 0xfe8);
 	struct TASK *task = task_now();
 	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
+	struct SHTCTL *shtctl = * ((int *) 0x0fe4);//haribote.cでそのように記憶させている。
+	int *reg = &eax + 1;
+	//reg[0]~reg[7] = edi ~ eax;
+	struct SHEET *sht;
+
 	if (edx == 1) {
 		cons_putchar(cons, eax & 0xff, 1);
 	} else if (edx == 2) {
-		cons_putstr0(cons, (char *) ebx + cs_base);
+		cons_putstr0(cons, (char *) ebx + ds_base);
 	} else if (edx == 3) {
-		cons_putstr1(cons, (char *) ebx + cs_base, ecx);
+		cons_putstr1(cons, (char *) ebx + ds_base, ecx);
 	} else if(edx == 4){
 		return &(task->tss.esp0);
+	} else if(edx == 5){
+		/*
+		openwin:
+		in:
+		ebx　ウィンドウのバッファ
+		esi　X方向の大きさ
+		edi　Y方向の大きさ
+		eax　透明色　
+		ecx　ウィンドウの名前
+
+		out:
+		eax　ウィンドウの名前（番地）
+		*/
+
+		sht = sheet_alloc(shtctl);
+		sheet_setbuf(sht, (char *)ebx + ds_base,  esi, edi, eax);
+		make_window8((char *) ebx + ds_base, esi, edi, (char *) ecx + ds_base, 0);
+		sheet_slide(sht, 100, 100);
+		sheet_updown(sht, 3);
+		reg[7] = (int) sht;
 	}
 	return 0;
 }
