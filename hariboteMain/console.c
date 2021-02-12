@@ -284,25 +284,25 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 
 	if (finfo != 0) {
 		/* ファイルが見つかった場合 */
-		p = (char *) memman_alloc_4k(memman, finfo->size);//pはメインメモリの確保された番地を指している
+		p = (char *) memman_alloc_4k(memman, finfo->size);
 		file_loadfile(finfo->clustno, finfo->size, p, fat, (char *) (ADR_DISKIMG + 0x003e00));
-		if(finfo->size >= 36 && strncmp(p + 4, "Hari", 4) == 0 && *p == 0x00){
-			segsiz	= *((int *)( p + 0x0000));//番地でなく値が入る
-			esp		= *((int *)( p + 0x000c));//スタックの初期値
-			datsiz	= *((int *)( p + 0x0010));//dataのサイズ
-			dathrb	= *((int *)( p + 0x0014));//dataの入った番地
+		if (finfo->size >= 36 && strncmp(p + 4, "Hari", 4) == 0 && *p == 0x00) {
+			segsiz = *((int *) (p + 0x0000));
+			esp    = *((int *) (p + 0x000c));
+			datsiz = *((int *) (p + 0x0010));
+			dathrb = *((int *) (p + 0x0014));
 			q = (char *) memman_alloc_4k(memman, segsiz);
 			*((int *) 0xfe8) = (int) q;
 			set_segmdesc(gdt + 1003, finfo->size - 1, (int) p, AR_CODE32_ER + 0x60);
-			set_segmdesc(gdt + 1004, segsiz - 1,   (int) q, AR_DATA32_RW + 0x60);
-			for(i = 0; i < datsiz; i++){
+			set_segmdesc(gdt + 1004, segsiz - 1,      (int) q, AR_DATA32_RW + 0x60);
+			for (i = 0; i < datsiz; i++) {
 				q[esp + i] = p[dathrb + i];
 			}
 			start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));
 			memman_free_4k(memman, (int) q, segsiz);
 		} else {
-			cons_putstr0(cons, ".hrb file format erro.\n");
-		} 
+			cons_putstr0(cons, ".hrb file format error.\n");
+		}
 		memman_free_4k(memman, (int) p, finfo->size);
 		cons_newline(cons);
 		return 1;
@@ -316,10 +316,12 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 	int ds_base = *((int *) 0xfe8);
 	struct TASK *task = task_now();
 	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
-	struct SHTCTL *shtctl = * ((int *) 0x0fe4);//haribote.cでそのように記憶させている。
-	int *reg = &eax + 1;
-	//reg[0]~reg[7] = edi ~ eax;
+	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *) 0x0fe4);
 	struct SHEET *sht;
+	int *reg = &eax + 1;	/* eaxの次の番地 */
+		/* 保存のためのPUSHADを強引に書き換える */
+		/* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
+		/* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
 
 	if (edx == 1) {
 		cons_putchar(cons, eax & 0xff, 1);
@@ -327,41 +329,25 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		cons_putstr0(cons, (char *) ebx + ds_base);
 	} else if (edx == 3) {
 		cons_putstr1(cons, (char *) ebx + ds_base, ecx);
-	} else if(edx == 4){
+	} else if (edx == 4) {
 		return &(task->tss.esp0);
-	} else if(edx == 5){
-		/*
-		openwin:
-		in:
-		ebx　ウィンドウのバッファ
-		esi　X方向の大きさ
-		edi　Y方向の大きさ
-		eax　透明色　
-		ecx　ウィンドウの名前
-
-		out:
-		eax　ウィンドウの名前（番地）
-		*/
-
+	} else if (edx == 5) {
 		sht = sheet_alloc(shtctl);
-		sheet_setbuf(sht, (char *)ebx + ds_base,  esi, edi, eax);
+		sheet_setbuf(sht, (char *) ebx + ds_base, esi, edi, eax);
 		make_window8((char *) ebx + ds_base, esi, edi, (char *) ecx + ds_base, 0);
-		sheet_slide(sht, 100, 100);
-		sheet_updown(sht, 3);
+		sheet_slide(sht, 100, 50);
+		sheet_updown(sht, 3);	/* 3という高さはtask_aの上 */
 		reg[7] = (int) sht;
+	} else if (edx == 6) {
+		sht = (struct SHEET *) ebx;
+		putfonts8_asc(sht->buf, sht->bxsize, esi, edi, eax, (char *) ebp + ds_base);
+		sheet_refresh(sht, esi, edi, esi + ecx * 8, edi + 16);
+	} else if (edx == 7) {
+		sht = (struct SHEET *) ebx;
+		boxfill8(sht->buf, sht->bxsize, ebp, eax, ecx, esi, edi);
+		sheet_refresh(sht, eax, ecx, esi + 1, edi + 1);
 	}
 	return 0;
-}
-
-int *inthandler0d(int *esp)
-{
-	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
-	struct TASK *task = task_now();
-	char s[30];
-	cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
-	sprintf(s, "EIP = %08X\n", esp[11]);
-	cons_putstr0(cons, s);
-	return &(task->tss.esp0); /* 異常終了させる */
 }
 
 int *inthandler0c(int *esp)
@@ -372,6 +358,16 @@ int *inthandler0c(int *esp)
 	cons_putstr0(cons, "\nINT 0C :\n Stack Exception.\n");
 	sprintf(s, "EIP = %08X\n", esp[11]);
 	cons_putstr0(cons, s);
-	return &(task->tss.esp0); /* 異常終了させる */
+	return &(task->tss.esp0);	/* 異常終了させる */
 }
 
+int *inthandler0d(int *esp)
+{
+	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
+	struct TASK *task = task_now();
+	char s[30];
+	cons_putstr0(cons, "\nINT 0D :\n General Protected Exception.\n");
+	sprintf(s, "EIP = %08X\n", esp[11]);
+	cons_putstr0(cons, s);
+	return &(task->tss.esp0);	/* 異常終了させる */
+}
