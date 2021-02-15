@@ -181,6 +181,9 @@ void HariMain(void)
 						fifo32_put(&task_cons->fifo, 10 + 256);
 					}
 				}
+				if(i == 256 + 0x57){ //F11を押したら下のウィンドウを上に
+					sheet_updown(shtctl->sheets[1], shtctl->top - 1);
+				}
 				if (i == 256 + 0x0f) {	/* Tab */
 					if (key_to == 0) {
 						key_to = 1;
