@@ -259,6 +259,8 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 	char name[18], *p, *q;
 	struct TASK *task = task_now();
 	int i, segsiz, datsiz, esp, dathrb;
+	struct SHTCTL *shtctl;
+	struct SHEET *sht;
 
 	/* コマンドラインからファイル名を生成 */
 	for (i = 0; i < 13; i++) {
@@ -297,7 +299,14 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 			for(i = 0; i < datsiz; i++){
 				q[esp + i] = p[dathrb + i];
 			}
-			start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));
+			start_app(0x1b, 1003 * 8, esp, 1004 * 8, &(task->tss.esp0));//アプリ終了時はこの下から再開される
+			shtctl = (struct SHTCTL *) *((int *) 0x0fe4);
+			for(i = 0; i < MAX_SHEETS; i++){
+				sht = &(shtctl->sheets0[i]);
+				if(sht->flags != 0 && sht->task == task){
+					sheet_free(sht);
+				}
+			}
 			memman_free_4k(memman, (int) q, segsiz);
 		} else {
 			cons_putstr0(cons, ".hrb file format erro.\n");
@@ -342,6 +351,7 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		eax　ウィンドウの名前（番地）
 		*/
 		sht = sheet_alloc(shtctl);
+		sht->task = task;
 		sheet_setbuf(sht, (char *)ebx + ds_base,  esi, edi, eax);
 		make_window8((char *) ebx + ds_base, esi, edi, (char *) ecx + ds_base, 0);
 		sheet_slide(sht, 100, 100);
