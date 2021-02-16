@@ -42,8 +42,8 @@ void HariMain(void)
 	};
 	int key_to = 0, key_shift = 0, key_leds = (binfo->leds >> 4) & 7, keycmd_wait = -1;
 	struct CONSOLE *cons;
-	struct SHEET *sht;
-	int x, y, j;
+	struct SHEET *sht = 0;
+	int x, y, j, mmx = -1, mmy = -1;
 
 	init_gdtidt();
 	init_pic();
@@ -270,19 +270,32 @@ void HariMain(void)
 					}
 					sheet_slide(sht_mouse, mx, my);
 					if ((mdec.btn & 0x01) != 0) {
-						/* 左ボタンを押していたら、winを上にする */
-						for(j = shtctl->top - 1; j > 0; j--){
-							sht = shtctl->sheets[j];
-							x = mx - sht->vx0;
-							y = my - sht->vy0;
-							if(0 <= x && x <= sht->bxsize  && 0 <= y &&  y <= sht->bysize){
-								if(sht->buf[y + sht->bxsize + x] != sht->col_inv){
-									sheet_updown(sht, shtctl->top-1);
-									break;
+						if(mmx < 0){//移動モードでない
+							/* 左ボタンを押していたら、winを上にする */
+							for(j = shtctl->top - 1; j > 0; j--){
+								sht = shtctl->sheets[j];
+								x = mx - sht->vx0;
+								y = my - sht->vy0;
+								if(0 <= x && x <= sht->bxsize  && 0 <= y &&  y <= sht->bysize){
+									if(sht->buf[y + sht->bxsize + x] != sht->col_inv){
+										sheet_updown(sht, shtctl->top-1);
+										if(y < 21){
+											mmx = mx;
+											mmy = my;
+										}
+										break;
+									}
 								}
 							}
+						} else {//移動モードのとき
+							x = mx - mmx;
+							y = my - mmy;
+							sheet_slide(sht, sht->vx0 + x, sht->vy0 + y);
+							mmx = mx;//移動前の座標を更新	
+							mmy = my;
 						}
-						
+					}else{//離されたら	
+						mmx = -1;
 					}
 				}
 			} else if (i <= 1) { /* カーソル用タイマ */
