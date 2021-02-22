@@ -45,7 +45,7 @@ void HariMain(void)
 	int key_shift = 0, key_leds = (binfo->leds >> 4) & 7, keycmd_wait = -1;
 	//struct CONSOLE *cons;
 	struct SHEET *sht = 0, *key_win;
-	int x, y, j, mmx = -1, mmy = -1;
+	int x, y, j, mmx = -1, mmy = -1, mmx2 = 0;
 
 	init_gdtidt();
 	init_pic();
@@ -259,6 +259,7 @@ void HariMain(void)
 										if(y < 21){
 											mmx = mx;
 											mmy = my;
+											mmx2 = sht->vx0;
 										}
 										if(sht->bxsize - 25 < x && x < sht->bxsize - 5 && 5 < y && y < 19){//xボタンのいち
 											if(( sht->flags & 0x10) != 0){//taskが作ったウィンドウなのか
@@ -278,8 +279,7 @@ void HariMain(void)
 						} else {//移動モードのとき
 							x = mx - mmx;
 							y = my - mmy;
-							sheet_slide(sht, sht->vx0 + x, sht->vy0 + y);
-							mmx = mx;//移動前の座標を更新	
+							sheet_slide(sht, (mmx2 + x + 2) & ~3, sht->vy0 + y);
 							mmy = my;
 						}
 					}else{//離されたら	
