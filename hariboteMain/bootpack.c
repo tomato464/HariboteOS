@@ -15,7 +15,7 @@ void HariMain(void)
 	char s[40];
 	struct FIFO32 fifo, keycmd;
 	int fifobuf[128], keycmd_buf[32], *cons_fifo[2];
-	int mx, my, i;
+	int mx, my, i, new_mx = -1, new_my = 0, new_wx = 0x7fffffff, new_wy = 0;
 	unsigned int memtotal;
 	struct MOUSE_DEC mdec;
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
@@ -131,9 +131,19 @@ void HariMain(void)
 			io_out8(PORT_KEYDAT, keycmd_wait);
 		}
 		io_cli();
-		if (fifo32_status(&fifo) == 0) {
-			task_sleep(task_a);
-			io_sti();
+		if (fifo32_status(&fifo) == 0) {//FIFOが空になったので、保留している描写があれば実行する
+			if(new_mx >= 0){
+				io_sti();
+				sheet_slide(sht_mouse, new_mx, new_my);
+				new_mx = -1;
+			}else if (new_wx != 0x7fffffff){
+				io_sti();
+				sheet_slide(sht, new_wx, new_wy);
+				new_wx = 0x7fffffff;
+			}else {
+				task_sleep(task_a);
+				io_sti();
+			}
 		} else {
 			i = fifo32_get(&fifo);
 			io_sti();
@@ -238,7 +248,8 @@ void HariMain(void)
 					if (my > binfo->scrny - 1) {
 						my = binfo->scrny - 1;
 					}
-					sheet_slide(sht_mouse, mx, my);
+					new_mx = mx;
+					new_my = my;
 					if ((mdec.btn & 0x01) != 0) {
 						if(mmx < 0){//移動モードでない
 							/* 左ボタンを押していたら、winを上にする */
@@ -260,6 +271,7 @@ void HariMain(void)
 											mmx = mx;
 											mmy = my;
 											mmx2 = sht->vx0;
+											new_wy = sht->vy0;
 										}
 										if(sht->bxsize - 25 < x && x < sht->bxsize - 5 && 5 < y && y < 19){//xボタンのいち
 											if(( sht->flags & 0x10) != 0){//taskが作ったウィンドウなのか
@@ -279,11 +291,16 @@ void HariMain(void)
 						} else {//移動モードのとき
 							x = mx - mmx;
 							y = my - mmy;
-							sheet_slide(sht, (mmx2 + x + 2) & ~3, sht->vy0 + y);
+							new_wx = (mmx2 + x + 2) & ~3;
+							new_wy = new_wy + y;
 							mmy = my;
 						}
 					}else{//離されたら	
 						mmx = -1;
+						if(new_wx != 0x7fffffff){
+							sheet_slide(sht, new_wx, new_wy);
+							new_wx = 0x7fffffff;
+						}
 					}
 				}
 			}
