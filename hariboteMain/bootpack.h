@@ -194,7 +194,7 @@ void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data);
 void timer_settime(struct TIMER *timer, unsigned int timeout);
 void inthandler20(int *esp);
 int timer_cancel(struct TIMER *timer);
-void timer_canselall(struct FIFO32 *fifo);
+void timer_cancelall(struct FIFO32 *fifo);
 
 /* mtask.c */
 #define MAX_TASKS		1000	/* 最大タスク数 */
@@ -213,7 +213,7 @@ struct TASK {
 	struct FIFO32 fifo;
 	struct TSS32 tss; 
 	struct	CONSOLE *cons;//このタスクはどのコンソールに書き込むべきか
-	int ds_base;
+	int ds_base, cons_stack;
 };
 struct TASKLEVEL {
 	int running; /* 動作しているタスクの数 */
@@ -257,6 +257,7 @@ void cmd_mem(struct CONSOLE *cons, int memtotal);
 void cmd_cls(struct CONSOLE *cons);
 void cmd_dir(struct CONSOLE *cons);
 void cmd_type(struct CONSOLE *cons, int *fat, char *cmdline);
+void cmd_exit(struct CONSOLE *cons, int *fat);
 int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline);
 int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax);
 void hrb_api_linewin(struct SHEET *sht, int x0, int y0 ,int x1, int y1, int col);
