@@ -134,9 +134,6 @@ void HariMain(void)
 					key_win = shtctl->sheets[shtctl->top - 1];
 					keywin_on(key_win);
 				}
-
-				key_win = shtctl->sheets[shtctl->top-1];
-				keywin_on(key_win);
 			}
 
 			if (256 <= i && i <= 511) { /* キーボードデータ */
@@ -149,21 +146,21 @@ void HariMain(void)
 				} else {
 					s[0] = 0;
 				}
-				if ('A' <= s[0] && s[0] <= 'Z') {	/* 入力文字がアルファベット */
+				if (key_win != 0 && 'A' <= s[0] && s[0] <= 'Z') {	/* 入力文字がアルファベット */
 					if (((key_leds & 4) == 0 && key_shift == 0) ||
 							((key_leds & 4) != 0 && key_shift != 0)) {
 						s[0] += 0x20;	/* 大文字を小文字に変換 */
 					}
 				}
 
-				if (s[0] != 0) { /* 通常文字 back space, Enter*/
+				if (key_win != 0 && s[0] != 0) { /* 通常文字 back space, Enter*/
 					fifo32_put(&key_win->task->fifo, s[0] + 256);
 				}
 
-				if(i == 256 + 0x57){ //F11を押したら下のウィンドウを上に
+				if(key_win != 0 && i == 256 + 0x57){ //F11を押したら下のウィンドウを上に
 					sheet_updown(shtctl->sheets[1], shtctl->top - 1);
 				}
-				if (i == 256 + 0x0f) {	/* Tab */
+				if (key_win != 0 && i == 256 + 0x0f) {	/* Tab */
 					keywin_off(key_win);
 					j = key_win->height - 1;
 					if(j == 0){
@@ -211,7 +208,9 @@ void HariMain(void)
 				}
 
 				if(i == 256 + 0x3c && key_shift != 0){//shift + F2
-					keywin_off(key_win);
+					if(key_win != 0){
+						keywin_off(key_win);
+					}
 					key_win = open_console(shtctl, memtotal);
 					sheet_slide(key_win, 32, 4);
 					sheet_updown(key_win, shtctl->top);
