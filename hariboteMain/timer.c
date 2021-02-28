@@ -128,12 +128,12 @@ int timer_cancel(struct TIMER *timer)
 	io_cli();//キャンセル中にタイマの状態が変わると困る
 
 	if(timer->flags == TIMER_FLAGS_USING){//キャンセルが必要かどうかを調べる
-		if(t == timerctl.t0){//タイマが先頭だった場合
+		if(timer == timerctl.t0){//タイマが先頭だった場合
 			t = timer->next;
 			timerctl.t0 = t;
 			timerctl.next = t->timeout;
 		}else{//先頭でないとき
-			t = &timerctl.t0;
+			t = timerctl.t0;
 			for(;;){//timerの一つ前のものを探す
 				if(t->next == timer){
 					break;
