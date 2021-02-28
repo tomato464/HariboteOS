@@ -296,7 +296,7 @@ _asm_end_app:
 		RET		; cmp_appへ戻る
 
 _start_app:		; void start_app(int eip, int cs, int esp, int ds, int *tss_esp0);
-		PUSHAD		; 32ビットレジスタを全部保存しておく
+		PUSHAD		; 32ビットレジスタを全部保存しておく（８個）
 		MOV		EAX,[ESP+36]	; アプリ用のEIP
 		MOV		ECX,[ESP+40]	; アプリ用のCS
 		MOV		EDX,[ESP+44]	; アプリ用のESP
