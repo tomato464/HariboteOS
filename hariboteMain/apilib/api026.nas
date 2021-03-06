@@ -1,18 +1,17 @@
 [FORMAT "WCOFF"]
 [INSTRSET "i486p"]
 [BITS 32]
-[FILE "api025.nas"]
+[FILE "api026.nas"]
 
-		GLOBAL	_api_fread
+		GLOBAL	_api_cmdline
 
 [SECTION .text]
 
-_api_fread:		; int api_fread(char *buf, int maxsize, int fhandle);
+_api_cmdline:		; int api_cmdline(char *buf, int maxsize);
 	PUSH	EBX
-	MOV		EDX,25
+	MOV		EDX,26
 	MOV		EBX,[ESP + 8]
 	MOV		ECX,[ESP + 12]
-	MOV		EAX,[ESP + 16]
 	INT		0x40
 	POP		EBX
 	RET
