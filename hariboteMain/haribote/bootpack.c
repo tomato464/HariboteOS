@@ -48,6 +48,10 @@ void HariMain(void)
 	//struct CONSOLE *cons;
 	struct SHEET *sht = 0, *key_win, *sht2;
 	int x, y, j, mmx = -1, mmy = -1, mmx2 = 0;
+	int *fat;
+	unsigned char *nihongo;
+	struct FILEINFO *finfo;
+	extern char hankaku[4096];
 
 	init_gdtidt();
 	init_pic();
@@ -72,6 +76,7 @@ void HariMain(void)
 	fifo.task = task_a;
 	task_run(task_a, 1, 2);
 	* ((int *) 0x0fe4) = (int) shtctl;
+	task->langmode = 0;//task_aを英語モードに
 
 	/* sht_back */
 	sht_back  = sheet_alloc(shtctl);
@@ -100,6 +105,25 @@ void HariMain(void)
 	/* 最初にキーボード状態との食い違いがないように、設定しておくことにする */
 	fifo32_put(&keycmd, KEYCMD_LED);
 	fifo32_put(&keycmd, key_leds);
+
+	/*日本語フォントの読み込み*/
+	nihongo = (unsigned char *)memman_alloc_4k(memman, 16 * 256 + 32 * 94 * 47);//半角を256こ、全角を47区読み込む
+	fat = (int *)memman_alloc_4k(memman, 4 * 2880);
+	file_readfat(fat, (unsigned char *) (ADR_DISKIMG + 0x000200));
+	finfo = file_search("nihongo.fnt", (struct FILEINFO *)(ADR_DISKIMG + 0x002600), 224);
+	if(finfo != 0){//	見つけれた
+		file_loadfile(finfo->clustno, finfo->size, nihongo, fat, (char *)(ADR_DISKIMG + 0x003e00));
+	}else{//　見つけれなかった
+		for(i = 0; i < 16*256; i++){//hankakuをコピー
+			nihongo[i] = hankaku[i];
+		}
+		for(i = 16*256; i < 16 * 256 + 32 * 96 * 47; i++){//以降を0xffで埋めつくす
+			nihongo[i] = 0xff;
+		}
+	}
+
+	*((int *)0x0fe8) = (int)nihongo;
+	memman_free_4k(memman, (int)fat, 4 * 2880);
 
 	for (;;) {
 		if (fifo32_status(&keycmd) > 0 && keycmd_wait < 0) {
