@@ -107,13 +107,14 @@ void HariMain(void)
 	fifo32_put(&keycmd, key_leds);
 
 	/*日本語フォントの読み込み*/
-	nihongo = (unsigned char *)memman_alloc_4k(memman, 16 * 256 + 32 * 94 * 47);//半角を256こ、全角を47区読み込む
 	fat = (int *)memman_alloc_4k(memman, 4 * 2880);
 	file_readfat(fat, (unsigned char *) (ADR_DISKIMG + 0x000200));
 	finfo = file_search("nihongo.fnt", (struct FILEINFO *)(ADR_DISKIMG + 0x002600), 224);
 	if(finfo != 0){//	見つけれた
-		file_loadfile(finfo->clustno, finfo->size, nihongo, fat, (char *)(ADR_DISKIMG + 0x003e00));
+		i = finfo->size;
+		nihongo = file_loadfile2(finfo->clustno, &i, fat);
 	}else{//　見つけれなかった
+		nihongo = (unsigned char *)memman_alloc_4k(memman, 16 * 256 + 32 * 94 * 47);//半角を256こ、全角を47区読み込む
 		for(i = 0; i < 16*256; i++){//hankakuをコピー
 			nihongo[i] = hankaku[i];
 		}
