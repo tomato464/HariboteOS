@@ -372,7 +372,7 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
 	char name[18], *p, *q;
 	struct TASK *task = task_now();
-	int i, segsiz, datsiz, esp, dathrb;
+	int i, segsiz, datsiz, esp, dathrb, appsiz;
 	struct SHTCTL *shtctl;
 	struct SHEET *sht;
 
@@ -399,9 +399,9 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 
 	if (finfo != 0) {
 		/* ファイルが見つかった場合 */
-		p = (char *) memman_alloc_4k(memman, finfo->size);//pはメインメモリの確保された番地を指している
-		file_loadfile(finfo->clustno, finfo->size, p, fat, (char *) (ADR_DISKIMG + 0x003e00));
-		if(finfo->size >= 36 && strncmp(p + 4, "Hari", 4) == 0 && *p == 0x00){
+		appsiz = finfo->size;
+		p = file_loadfile2(finfo->clustno, &appsiz, fat);
+		if(appsiz >= 36 && strncmp(p + 4, "Hari", 4) == 0 && *p == 0x00){
 			segsiz	= *((int *)( p + 0x0000));//番地でなく値が入る
 			esp		= *((int *)( p + 0x000c));//スタックの初期値
 			datsiz	= *((int *)( p + 0x0010));//dataのサイズ
@@ -428,7 +428,7 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 				} 
 			}
 			timer_cancelall(&task->fifo);
-			memman_free_4k(memman, (int) q, segsiz);
+			memman_free_4k(memman, (int) q, appsiz);
 			task->langbyte1 = 0;
 		} else {
 			cons_putstr0(cons, ".hrb file format erro.\n");
@@ -605,10 +605,9 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 					(struct FILEINFO *)(ADR_DISKIMG + 0x002600), 224);
 			if(finfo != 0){//ファイルを探せた
 				reg[7] = ( int ) fh;
-				fh->buf = (char *) memman_alloc_4k(memman, finfo->size);
 				fh->size = finfo->size;
 				fh->pos = 0;
-				file_loadfile(finfo->clustno, finfo->size, fh->buf, task->fat, (char *)(ADR_DISKIMG + 0x003e00));
+				fh->buf = file_loadfile2(finfo->clustno, &fh->size, task->fat);
 			}
 		}
 	} else if(edx == 22){// file close
