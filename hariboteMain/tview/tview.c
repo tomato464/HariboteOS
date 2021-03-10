@@ -101,13 +101,53 @@ err:
 	p = txtbuf + 1;
 	//Main
 	for(;;){
-		textview(win, w, h, xskip, p, t, 0);//lang = 0
+		textview(win, w, h, xskip, p, t, lang);
 		i = api_getkey(1);
-		if(i == 0x0a){
-			break;
+
+		if(i == 'Q' || i == 'q' || i == 0x0a){
+			api_end();
+		}
+		if ('A' <= i && i <= 'F') {
+			spd_x = 1 << (i - 'A');	/* 1, 2, 4, 8, 16, 32 */
+		}
+		if ('a' <= i && i <= 'f') {
+			spd_y = 1 << (i - 'a');	/* 1, 2, 4, 8, 16, 32 */
+		}
+		if (i == '<' && t > 1) {
+			t /= 2;
+		}
+		if (i == '>' && t < 256) {
+			t *= 2;
+		}
+
+		if(i == '4'){//left
+			
+		}
+
+		if(i == '6'){//right
+			
+		}
+
+		if(i == '2'){//down
+			for(;;){
+				for(j = 0; j < spd_y;j++){
+					for(q = p; *q != 0 && *q != 0x0a; q++){}//
+					if(*q == 0){//file‚ÌI’[
+						break;
+					}
+					p = q + 1;
+				}
+
+				if(api_getkey(0) != '2'){
+					break;
+				}
+			}
+		}
+
+		if(i == '8'){//up
+			
 		}
 	}
-	api_end();
 }
 
 char *skipspace(char *p)
@@ -150,21 +190,64 @@ char *lineview(int win, int w, int y, int xskip, unsigned char *p, int tab, int 
 				if(0 <= x && x < w){
 					s[x] = *p;
 				}
-				s[x] = "a";
 				x++;
 			}
 			p++;
 		}
 
 		if(lang == 1){//SJIS
-			p ++;
+			if(*p == 0x09){//tab
+				x = puttab(x, w, xskip, s, tab);
+				p++;
+			} else if((0x81 <= *p && *p <= 0x9f) || (0xe0 <= *p && *p <= 0xfc)){//‘SŠp
+				if(x == -1){
+					s[0] = ' ';
+				}
+
+				if(0 <= x && x < w - 1){
+					s[x] = *p;
+					s[x + 1] = p[1];
+				}
+				if(x == w - 1){
+					s[x] = ' ';
+				}
+				x += 2;
+				p += 2;
+			} else {
+				if(0 <= x && x < w){
+					s[x] = *p;
+				}
+				x++;
+				p++;
+			}
 		}
 	
 		if(lang == 2){
-			p++;
+			if(*p == 0x09){//tab
+				x = puttab(x, w, xskip, s, tab);
+				p++;
+			}else if(0xa1 <= *p && *p <= 0xfe){//‘SŠp
+				if(x == -1){
+					s[0] = ' ';
+				}
+				if(0 <= x && x < w - 1){
+					s[x] = *p;
+					s[x + 1] = p[1];
+				}
+				if(x == w - 1){
+					s[x] = ' ';
+				}
+				x += 2;
+				p += 2;
+			}else {
+				if(0 <= x && x < w - 1){//”¼Šp
+					s[x] = *p;
+				}
+				x++;
+				p++;
+			}
 		}
 	}
-
 	if(x > w){
 		x = w;
 	}
