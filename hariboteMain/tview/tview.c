@@ -121,11 +121,24 @@ err:
 		}
 
 		if(i == '4'){//left
-			
+			for(;;){
+				xskip -= spd_x;
+				if(xskip < 0){
+					xskip = 0;
+				}
+				if(api_getkey(0) != '4'){
+					break;
+				}
+			}
 		}
 
 		if(i == '6'){//right
-			
+			for(;;){
+				xskip += spd_x;
+				if(api_getkey(0) != '6'){
+					break;
+				}
+			}
 		}
 
 		if(i == '2'){//down
@@ -145,7 +158,17 @@ err:
 		}
 
 		if(i == '8'){//up
-			
+			for(;;){
+				for(j = 0; j < spd_y;j++){
+					if(p == txtbuf + 1){//ファイルの先端
+						break;
+					}
+					for(p--; p[-1] != 0x0a; p--){}//
+				}
+				if(api_getkey(0) != '8'){
+					break;
+				}
+			}
 		}
 	}
 }
