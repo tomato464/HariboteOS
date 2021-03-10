@@ -76,7 +76,7 @@ void HariMain(void)
 	fifo.task = task_a;
 	task_run(task_a, 1, 2);
 	* ((int *) 0x0fe4) = (int) shtctl;
-	task->langmode = 0;//task_aを英語モードに
+	task_a->langmode = 0;//task_aを英語モードに
 
 	/* sht_back */
 	sht_back  = sheet_alloc(shtctl);

@@ -12,7 +12,7 @@ void console_task(struct SHEET *sheet, int memtotal)
 	struct CONSOLE cons;
 	struct FILEHANDLE fhandle[8];
 	char cmdline[30];
-	unsigned char *nihongo = *((int *) 0x0fe8);
+	unsigned char *nihongo = (char *)*((int *) 0x0fe8);
 
 	cons.sht = sheet;
 	cons.cur_x =  8;
@@ -369,7 +369,6 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 {
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
 	struct FILEINFO *finfo;
-	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
 	char name[18], *p, *q;
 	struct TASK *task = task_now();
 	int i, segsiz, datsiz, esp, dathrb, appsiz;

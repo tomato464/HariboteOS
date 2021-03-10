@@ -109,7 +109,7 @@ void putfonts8_asc(char *vram, int xsize, int x, int y, char c, unsigned char *s
 {
 	extern char hankaku[4096];
 	struct TASK *task = task_now();
-	char *nihongo = *((int *)0x0fe8), *font;
+	char *nihongo = (char *)*((int *)0x0fe8), *font;
 	int k, t;
 
 	if(task->langmode == 0){//hankaku
